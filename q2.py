@@ -100,7 +100,7 @@ def run_validation(x, y, taus, val_frac):
     ## TODO
 
     #randomly split the data into 70% training and 30% validation
-    x_train, x_val, y_train, y_val = train_test_split(x, y.reshape(len(y),1), test_size=0.3)
+    x_train, x_val, y_train, y_val = train_test_split(x, y.reshape(len(y),1), test_size=val_frac,random_state=2)
 
     loss_train = np.array([])
     loss_val = np.array([])
@@ -109,52 +109,23 @@ def run_validation(x, y, taus, val_frac):
         Y_train_pred = np.array([])
         Y_val_pred = np.array([])
         #get the prediction from traing data
-        # for test_datum in x_train:
-        #     #make a prediction from test data
-        #     y = LRLS(test_datum, x_train, y_train, tau)
-        #     Y_train_pred = np.append(Y_train_pred,y)
-        # #get the predictions from validation data
-        # error = Y_train_pred.reshape(Y_train_pred.shape[0],1)-y_train
-        # loss_train = np.append(loss_train,np.mean(error**2))
+        for test_datum in x_train:
+            #make a prediction from test data
+            y = LRLS(test_datum, x_train, y_train, tau)
+            Y_train_pred = np.append(Y_train_pred,y)
+        #get the predictions from validation data
+        error_train = Y_train_pred.reshape(Y_train_pred.shape[0],1)-y_train
+        loss_train = np.append(loss_train,np.mean(error_train**2))
         # print("tau={myTau}, error = {myError}".format(myTau=tau,myError = np.mean(error**2)))
         #calculate val loss
         for val_datum in x_val:
             #make a prediction from val data
-            y = LRLS(val_datum, x_val, y_val, tau)
+            y = LRLS(val_datum, x_train, y_train, tau)
             Y_val_pred = np.append(Y_val_pred,y)
+
         error_val = Y_val_pred.reshape(Y_val_pred.shape[0],1) - y_val
         loss_val = np.append(loss_val, np.mean(error_val**2))
-        print("my method tau={myTau}, error = {myError}".format(myTau=tau, myError=np.mean(error_val ** 2)))
-
-        #verification
-        # Prep vectors to return
-        train_losses = np.empty_like(taus)
-        test_losses = np.empty_like(taus)
-        x_test = x_val
-        y_test = y_val
-        # Compute average loss for each tau
-        for (i, t) in enumerate(taus):
-            train_predictions = np.array([
-                LRLS(datum, x_train, y_train, t)
-                for datum in x_train
-            ])
-
-            test_predictions = np.array([
-                LRLS(datum, x_train, y_train, t)
-                for datum in x_test
-            ])
-
-            # Error for each datum
-            train_errs = (train_predictions - y_train)
-            test_errs = (test_predictions - y_test)
-
-            # Use mean squared error
-            train_losses[i] = np.mean(train_errs ** 2)
-            test_losses[i] = np.mean(test_errs ** 2)
-
-            print(i, t, train_losses[i], test_losses[i])
-            print("")
-        #verification
+        # print("my method tau={myTau}, error = {myError}".format(myTau=tau, myError=np.mean(error_val ** 2)))
 
     return loss_train, loss_val
     # return train_losses, test_losses
@@ -164,15 +135,15 @@ def run_validation(x, y, taus, val_frac):
 if __name__ == "__main__":
     # In this excersice we fixed lambda (hard coded to 1e-5) and only set tau value. Feel free to play with lambda as well if you wish
     #taus = np.logspace(1.0, 3, 200)
-    num = 1
-    taus = np.logspace(1.0, 1, num)
+    num = 50
+    taus = np.logspace(1.0, 3, num)
     # taus = np.array([10])
     train_losses, test_losses = run_validation(x, y, taus, val_frac=0.3)
-    # plt.semilogx(taus,train_losses)
-    # # plt.semilogx(test_losses)
-    # plt.xlabel("Tau")
-    # plt.ylabel("Average Training Loss")
-    # plt.show()
+
+    plt.semilogx(taus,train_losses)
+    plt.xlabel("Tau")
+    plt.ylabel("Average Training Loss")
+    plt.show()
 
     plt.semilogx(taus, test_losses)
     plt.xlabel("Tau")
