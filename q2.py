@@ -51,11 +51,13 @@ def LRLS(test_datum, x_train, y_train, tau, lam=1e-5):
     #generate A from x_train and test_datum
     #change test_datum into a row vector
     x_test_row = test_datum.reshape(1,test_datum.shape[0])
-    distance = l2(x_test_row,x_train)
+    distance = l2(x_test_row, x_train)
+
     #considering exp(x)/sum(exp(x)) = exp(log(exp(x)/sum(exp(x))))
     # = exp(log(exp(x))-log(sum(exp(x))))
     # = exp(x-log(sum(exp(x))))
     exponent = -distance/(2*(tau**2))
+
     #generate A
     A = np.exp(exponent-logsumexp(exponent))
 
@@ -64,24 +66,9 @@ def LRLS(test_datum, x_train, y_train, tau, lam=1e-5):
 
     # plug the formula for weights and calculate weights
     #use a linear solver to solve the problem
-    #note the weigths is a rwow vector
+    #note the weigths is a row vector
     w = np.linalg.solve(np.dot(x_train.T,np.dot(A_diag,x_train))+lam*np.identity(x_train.shape[1]),np.dot(x_train.T,np.dot(A_diag,y_train)))
 
-    # Code for verificatio
-    # X, Y = x_train, y_train
-    # X_T = x_train.transpose()
-    # # The two sides of the equation
-    # # (use element wise multiplication instead of
-    # # matrix multiplication because A is a vector)
-    # left = ((X_T * A) @ X) + lam
-    # right = (X_T * A) @ Y
-    #
-    # # Solve (don't use slow inverse)
-    # try:
-    #     w = np.linalg.solve(left, right)
-    # except:
-    #     w = np.linalg.pinv(left) @ right
-    # code for verification ends
 
     return np.dot(test_datum,w)
 
@@ -108,49 +95,44 @@ def run_validation(x, y, taus, val_frac):
     for tau in taus:
         Y_train_pred = np.array([])
         Y_val_pred = np.array([])
+
         #get the prediction from traing data
         for test_datum in x_train:
             #make a prediction from test data
             y = LRLS(test_datum, x_train, y_train, tau)
             Y_train_pred = np.append(Y_train_pred,y)
-        #get the predictions from validation data
+
+        #caculate the training loss
         error_train = Y_train_pred.reshape(Y_train_pred.shape[0],1)-y_train
         loss_train = np.append(loss_train,np.mean(error_train**2))
-        # print("tau={myTau}, error = {myError}".format(myTau=tau,myError = np.mean(error**2)))
-        #calculate val loss
+
+        # get the predictions from validation data
         for val_datum in x_val:
             #make a prediction from val data
             y = LRLS(val_datum, x_train, y_train, tau)
             Y_val_pred = np.append(Y_val_pred,y)
 
+        #calculate the validation loss
         error_val = Y_val_pred.reshape(Y_val_pred.shape[0],1) - y_val
         loss_val = np.append(loss_val, np.mean(error_val**2))
-        # print("my method tau={myTau}, error = {myError}".format(myTau=tau, myError=np.mean(error_val ** 2)))
 
     return loss_train, loss_val
-    # return train_losses, test_losses
     ## TODO
 
 
 if __name__ == "__main__":
     # In this excersice we fixed lambda (hard coded to 1e-5) and only set tau value. Feel free to play with lambda as well if you wish
-    #taus = np.logspace(1.0, 3, 200)
-    num = 50
-    taus = np.logspace(1.0, 3, num)
-    # taus = np.array([10])
+    taus = np.logspace(1.0, 3, 200)
     train_losses, test_losses = run_validation(x, y, taus, val_frac=0.3)
 
+    #plot the training losses
     plt.semilogx(taus,train_losses)
     plt.xlabel("Tau")
     plt.ylabel("Average Training Loss")
     plt.show()
 
+    #plot the validation losses
     plt.semilogx(taus, test_losses)
     plt.xlabel("Tau")
     plt.ylabel("Average Validation Loss")
     plt.show()
-
-    # print(C)
-    # a = np.array([[1,2],[3,4]])
-    #
-    # print(np.append(a,[[5,6]]))
